@@ -156,9 +156,28 @@ export default function App() {
 
   const openNode = openPath ? diffIndex.byPath.get(openPath) : undefined;
 
+  function handleNewComparison() {
+    setDiffIndex(undefined);
+    setFileAName('');
+    setFileBName('');
+    setLoadError(undefined);
+    setExpanded(new Set());
+    setSelected(new Set());
+    setResolutions(new Map());
+    setOpenPath(undefined);
+    setPropDiffCache(new Map());
+    setDirection('into-a');
+    setMirrorDeletions(false);
+    setScope('FULL');
+    setPendingPreview(null);
+  }
+
   return (
     <div className="app app--diff-view">
       <header className="app__header">
+        <button type="button" className="back-button" onClick={handleNewComparison}>
+          ← New comparison
+        </button>
         <span>
           A: {fileAName} ⇄ B: {fileBName}
         </span>

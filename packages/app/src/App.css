@@ -160,6 +160,22 @@ body {
   color: var(--accent);
 }
 
+.back-button {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 0.25rem 0.6rem;
+}
+
+.back-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .app__body {
   flex: 1;
   display: flex;
@@ -206,6 +222,24 @@ body {
 .tree-row__checkbox-spacer {
   width: 13px;
   flex: none;
+}
+
+/* A folder's checkbox is a DERIVED summary of its differing descendants,
+   never something you directly select — checked means "every difference
+   below is included," indeterminate means "some, but not all." The default
+   browser indeterminate glyph (a faint dash) reads too similar to a full
+   checkmark at a glance, so give it a distinct amber color/shape on top of
+   the checked state's blue, so "partial" is unmistakable from "everything." */
+.tree-row input[type='checkbox'] {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.tree-row input[type='checkbox']:indeterminate {
+  accent-color: var(--modified);
 }
 
 .tree-row__glyph {
