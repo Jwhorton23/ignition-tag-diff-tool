@@ -304,10 +304,10 @@ Left: op list grouped by folder (add/remove/replace/patch, each with source side
 - Property-level cherry-pick UI.
 - Keyboard navigation; hide-unchanged default.
 
-### Phase 3 — Migration power tools
-- Bulk find-and-replace with regex + preview table + per-row opt-out; standalone single-file mode.
-- Strip/normalize transform checklist.
-- Full validation pass (duplicate paths incl. case-collisions, missing defs, dangling `{param}` bindings) with results panel.
+### Phase 3 — Migration power tools ✅ delivered
+- Bulk find-and-replace with regex + preview table + per-row opt-out; composes with the diff-mode export (find/replace + strip + merge selection all apply in one export) and works standalone on a single file with no diff. Engine: `findReplace.ts`.
+- Strip/normalize transform checklist (history, alarms, values, documentation). Engine: `strip.ts`. History property names are a best-effort list, not yet confirmed against a real export the way most of this engine's assumptions have been — extend `HISTORY_KEYS` if a real file shows different ones.
+- Full validation pass (case-collision duplicate paths, missing UDT defs, dangling `{param}` bindings — checked against both the UDT definition's own subtree and each instance's overrides). Engine: `validate.ts`. Runs on load and is re-run against the final output before every export, so a transform that introduces a *new* problem (e.g. a find-replace that collapses two tag names into one) gets caught too, not just pre-existing issues.
 
 ### Phase 4 — Reporting & polish
 - Diff report export (Markdown + CSV).

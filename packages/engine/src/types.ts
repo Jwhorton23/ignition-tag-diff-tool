@@ -140,15 +140,54 @@ export type MergeOp =
   | { op: 'replace'; path: string; from: MergeSide }
   | { op: 'patch'; path: string; props: Array<{ key: string; from: MergeSide }> };
 
-export interface Transform {
-  kind: 'find-replace' | 'strip';
-  // Concrete shapes land in Phase 3 alongside the transform engine.
-  [key: string]: JsonValue | undefined;
-}
-
 export interface MergePlan {
   direction: MergeDirection;
   baseFile: MergeSide | null;
   ops: MergeOp[];
-  transforms: Transform[];
+}
+
+// ---------------------------------------------------------------------------
+// Transforms (Phase 3, PLAN.md §5): find/replace and strip/normalize, both
+// applied as a final pass over a deep copy of a TagFile — never mutating
+// loaded files, and independent of the merge/diff machinery (they work
+// standalone on a single file too).
+// ---------------------------------------------------------------------------
+
+export interface FindReplaceOptions {
+  /** Property name to target, e.g. "opcItemPath" or "opcServer" — any node
+   *  carrying this property as a string is a candidate, regardless of tagType. */
+  property: string;
+  find: string;
+  replace: string;
+  regex: boolean;
+  caseSensitive: boolean;
+}
+
+/** One row of the mandatory preview table (PLAN.md §5) — computed before
+ *  anything is applied, so a find/replace can never silently change a file. */
+export interface FindReplaceChange {
+  /** TagFile-local node id (not an alignment path — this operates on one file). */
+  path: string;
+  property: string;
+  before: string;
+  after: string;
+}
+
+export interface StripOptions {
+  removeHistory: boolean;
+  removeAlarms: boolean;
+  clearValues: boolean;
+  removeDocumentation: boolean;
+}
+
+export type ValidationSeverity = 'error' | 'warning';
+export type ValidationIssueKind = 'duplicate-path' | 'missing-udt-def' | 'dangling-param-binding';
+
+export interface ValidationIssue {
+  severity: ValidationSeverity;
+  kind: ValidationIssueKind;
+  path: string;
+  message: string;
+  /** Other node ids involved, e.g. the sibling(s) a path case-collides with. */
+  relatedPaths?: string[];
 }

@@ -793,3 +793,290 @@ body {
   color: var(--added);
   background: rgba(76, 175, 125, 0.15);
 }
+
+/* ---------- Load screen mode toggle (Phase 3) ---------- */
+
+.load-screen__mode-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.load-screen__mode-toggle button {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.4rem 0.9rem;
+  font-size: 12px;
+}
+
+.load-screen__mode-toggle button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(91, 157, 217, 0.1);
+}
+
+.load-screen__zones--single {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+/* ---------- Export panel wrapper (Phase 3 restructure) ---------- */
+
+.export-panel-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.export-panel__transforms-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+  font-size: 12px;
+}
+
+.export-panel__transforms-toggle:hover {
+  color: var(--text);
+}
+
+/* ---------- Transforms section (find/replace + strip) ---------- */
+
+.transforms-section {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.transforms-section__block {
+  min-width: 280px;
+}
+
+.transforms-section__block h3 {
+  margin: 0 0 0.5rem;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+}
+
+.find-replace-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 12px;
+}
+
+.find-replace-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text-dim);
+}
+
+.find-replace-form__checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 4px !important;
+}
+
+.find-replace-form input[type='text'] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.3rem 0.5rem;
+  width: 140px;
+}
+
+.find-replace-form button {
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  color: #0d1117;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  align-self: flex-end;
+}
+
+.find-replace-form button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.find-replace-form__error {
+  color: var(--removed);
+  width: 100%;
+  font-size: 11px;
+}
+
+.find-replace-preview {
+  margin-top: 0.6rem;
+  max-width: 560px;
+}
+
+.find-replace-preview__header {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.find-replace-preview__header label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.find-replace-preview__table {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.find-replace-preview__row {
+  display: grid;
+  grid-template-columns: 16px 1fr 1.4fr;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-family: var(--mono);
+  border-bottom: 1px solid var(--border);
+}
+
+.find-replace-preview__row:last-child {
+  border-bottom: none;
+}
+
+.find-replace-preview__row--header {
+  color: var(--text-dim);
+  font-family: inherit;
+  text-transform: uppercase;
+  font-size: 10px;
+  position: sticky;
+  top: 0;
+  background: var(--bg-panel);
+}
+
+.find-replace-preview__path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.find-replace-preview__before {
+  color: var(--removed);
+}
+
+.find-replace-preview__after {
+  color: var(--added);
+}
+
+.find-replace-preview__empty {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin-top: 0.5rem;
+}
+
+.strip-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.strip-checklist label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+}
+
+/* ---------- Validation panel ---------- */
+
+.validation-panel {
+  border-top: 1px solid var(--border);
+  padding: 0.4rem 1rem;
+  font-size: 12px;
+}
+
+.validation-panel--error {
+  background: rgba(224, 97, 107, 0.08);
+}
+
+.validation-panel--warning {
+  background: rgba(217, 164, 65, 0.06);
+}
+
+.validation-panel__summary {
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+}
+
+.validation-panel--error .validation-panel__summary {
+  color: var(--removed);
+}
+
+.validation-panel--warning .validation-panel__summary {
+  color: var(--modified);
+}
+
+.validation-panel__list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.validation-panel__issue button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  text-align: left;
+  padding: 2px 0;
+  font-size: 11px;
+  width: 100%;
+}
+
+.validation-panel__issue button:hover {
+  color: var(--text);
+}
+
+.validation-panel__issue--error button {
+  color: var(--removed);
+}
+
+.validation-panel__issue--warning button {
+  color: var(--modified);
+}
+
+/* ---------- Standalone transform screen ---------- */
+
+.app--transform-view {
+  overflow-y: auto;
+}
+
+.transform-screen__body {
+  padding: 1rem;
+  max-width: 900px;
+}
+
+.transform-screen__export {
+  margin-top: 1rem;
+}

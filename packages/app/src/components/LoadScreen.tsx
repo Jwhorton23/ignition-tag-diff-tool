@@ -55,42 +55,63 @@ function DropZone({ label, file, onFile }: DropZoneProps) {
 
 interface LoadScreenProps {
   onReady: (fileA: LoadedFile, fileB: LoadedFile) => void;
+  onTransformReady: (file: LoadedFile) => void;
   error?: string;
 }
 
-export function LoadScreen({ onReady, error }: LoadScreenProps) {
+export function LoadScreen({ onReady, onTransformReady, error }: LoadScreenProps) {
+  const [mode, setMode] = useState<'compare' | 'transform'>('compare');
   const [fileA, setFileA] = useState<LoadedFile | null>(null);
   const [fileB, setFileB] = useState<LoadedFile | null>(null);
 
   return (
     <div className="load-screen">
       <h1>Ignition Tag Diff &amp; Merge Tool</h1>
-      <p className="load-screen__subtitle">Load two tag exports to compare.</p>
-      <div className="load-screen__zones">
-        <DropZone label="File A" file={fileA} onFile={setFileA} />
-        <button
-          className="swap-button"
-          type="button"
-          aria-label="Swap A and B"
-          disabled={!fileA && !fileB}
-          onClick={() => {
-            setFileA(fileB);
-            setFileB(fileA);
-          }}
-        >
-          ⇄
+      <div className="load-screen__mode-toggle">
+        <button type="button" className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>
+          Compare two files
         </button>
-        <DropZone label="File B" file={fileB} onFile={setFileB} />
+        <button type="button" className={mode === 'transform' ? 'active' : ''} onClick={() => setMode('transform')}>
+          Transform one file
+        </button>
       </div>
-      {error && <div className="load-screen__error">{error}</div>}
-      <button
-        className="primary-button"
-        type="button"
-        disabled={!fileA || !fileB}
-        onClick={() => fileA && fileB && onReady(fileA, fileB)}
-      >
-        Compare
-      </button>
+
+      {mode === 'compare' ? (
+        <>
+          <p className="load-screen__subtitle">Load two tag exports to compare.</p>
+          <div className="load-screen__zones">
+            <DropZone label="File A" file={fileA} onFile={setFileA} />
+            <button
+              className="swap-button"
+              type="button"
+              aria-label="Swap A and B"
+              disabled={!fileA && !fileB}
+              onClick={() => {
+                setFileA(fileB);
+                setFileB(fileA);
+              }}
+            >
+              ⇄
+            </button>
+            <DropZone label="File B" file={fileB} onFile={setFileB} />
+          </div>
+          {error && <div className="load-screen__error">{error}</div>}
+          <button className="primary-button" type="button" disabled={!fileA || !fileB} onClick={() => fileA && fileB && onReady(fileA, fileB)}>
+            Compare
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="load-screen__subtitle">Load one tag export to find/replace, strip, or validate — no comparison needed.</p>
+          <div className="load-screen__zones load-screen__zones--single">
+            <DropZone label="File" file={fileA} onFile={setFileA} />
+          </div>
+          {error && <div className="load-screen__error">{error}</div>}
+          <button className="primary-button" type="button" disabled={!fileA} onClick={() => fileA && onTransformReady(fileA)}>
+            Transform
+          </button>
+        </>
+      )}
     </div>
   );
 }

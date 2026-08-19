@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DEFAULT_IGNORED_KEYS, type DiffIndex, type MergeDirection, type MergeSide, type MissingUdtDef, type PropDiff } from '@ignition-diff/engine';
+import {
+  DEFAULT_IGNORED_KEYS,
+  type DiffIndex,
+  type FindReplaceChange,
+  type FindReplaceOptions,
+  type MergeDirection,
+  type MergeSide,
+  type MissingUdtDef,
+  type PropDiff,
+  type StripOptions,
+  type ValidationIssue,
+} from '@ignition-diff/engine';
 import './App.css';
 import { LoadScreen } from './components/LoadScreen';
 import { DiffTree } from './components/DiffTree';
@@ -7,6 +18,7 @@ import { DetailPane } from './components/DetailPane';
 import { ExportPanel } from './components/ExportPanel';
 import { FilterBar } from './components/FilterBar';
 import { IgnoreListPanel } from './components/IgnoreListPanel';
+import { TransformScreen } from './components/TransformScreen';
 import { callWorker } from './worker/rpc';
 import { saveTextFile, type LoadedFile } from './lib/fileAccess';
 import {
@@ -26,10 +38,14 @@ import {
 } from './lib/treeHelpers';
 import type { ExportRequest, ExportResponse } from './worker/engineWorker';
 
+const EMPTY_FIND_REPLACE: FindReplaceOptions = { property: '', find: '', replace: '', regex: false, caseSensitive: false };
+const EMPTY_STRIP: StripOptions = { removeHistory: false, removeAlarms: false, clearValues: false, removeDocumentation: false };
+
 interface ExportPreview {
   text: string;
   suggestedFileName: string;
   missingUdtDefs: MissingUdtDef[];
+  validationIssues: ValidationIssue[];
 }
 
 export default function App() {
@@ -57,6 +73,18 @@ export default function App() {
   const [scope, setScope] = useState('FULL');
   const [exporting, setExporting] = useState(false);
   const [pendingPreview, setPendingPreview] = useState<ExportPreview | null>(null);
+  const [lastValidationIssues, setLastValidationIssues] = useState<ValidationIssue[]>([]);
+
+  const [findReplaceOptions, setFindReplaceOptions] = useState<FindReplaceOptions>(EMPTY_FIND_REPLACE);
+  const [findReplacePreviewChanges, setFindReplacePreviewChanges] = useState<FindReplaceChange[] | undefined>(undefined);
+  const [findReplaceIncludedPaths, setFindReplaceIncludedPaths] = useState<Set<string>>(new Set());
+  const [previewingFindReplace, setPreviewingFindReplace] = useState(false);
+  const [findReplacePreviewError, setFindReplacePreviewError] = useState<string | undefined>();
+  const [stripOptions, setStripOptions] = useState<StripOptions>(EMPTY_STRIP);
+
+  // Standalone single-file transform mode is a fully separate screen/state
+  // machine (TransformScreen) — set only via the load screen's mode toggle.
+  const [singleTransformFile, setSingleTransformFile] = useState<LoadedFile | undefined>();
 
   async function handleReady(fileA: LoadedFile, fileB: LoadedFile) {
     setLoading(true);
@@ -190,15 +218,59 @@ export default function App() {
     [diffIndex, selected, resolutions, cherryPicks],
   );
 
-  async function runExport(autoPullInMissingDefs: boolean): Promise<ExportResponse> {
-    const payload: ExportRequest = {
+  function currentMergeSelectionPayload(autoPullInMissingDefs: boolean) {
+    return {
       selection: [...selected],
       resolutions: [...resolutions.entries()],
-      cherryPicks: [...cherryPicks.entries()].map(([path, props]) => [path, [...props.entries()]]),
+      cherryPicks: [...cherryPicks.entries()].map(([path, props]) => [path, [...props.entries()]] as [string, Array<[string, MergeSide]>]),
       direction,
       mirrorDeletions,
       autoPullInMissingDefs,
       scope: scope as 'FULL' | string,
+    };
+  }
+
+  async function handlePreviewFindReplace() {
+    setPreviewingFindReplace(true);
+    setFindReplacePreviewError(undefined);
+    try {
+      const changes = await callWorker<FindReplaceChange[]>('transformPreview', {
+        ...currentMergeSelectionPayload(false),
+        findReplace: findReplaceOptions,
+      });
+      setFindReplacePreviewChanges(changes);
+      setFindReplaceIncludedPaths(new Set(changes.map((c) => c.path)));
+    } catch (err) {
+      setFindReplacePreviewError(err instanceof Error ? err.message : String(err));
+      setFindReplacePreviewChanges(undefined);
+    } finally {
+      setPreviewingFindReplace(false);
+    }
+  }
+
+  function handleToggleFindReplaceIncluded(path: string) {
+    setFindReplaceIncludedPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  }
+
+  function handleToggleAllFindReplaceIncluded(include: boolean) {
+    setFindReplaceIncludedPaths(include ? new Set((findReplacePreviewChanges ?? []).map((c) => c.path)) : new Set());
+  }
+
+  async function runExport(autoPullInMissingDefs: boolean): Promise<ExportResponse> {
+    const activeFindReplace =
+      findReplacePreviewChanges && findReplaceIncludedPaths.size > 0
+        ? { options: findReplaceOptions, changes: findReplacePreviewChanges.filter((c) => findReplaceIncludedPaths.has(c.path)) }
+        : null;
+    const activeStrip = Object.values(stripOptions).some(Boolean) ? stripOptions : null;
+    const payload: ExportRequest = {
+      ...currentMergeSelectionPayload(autoPullInMissingDefs),
+      findReplace: activeFindReplace,
+      strip: activeStrip,
     };
     return callWorker<ExportResponse>('export', payload);
   }
@@ -207,6 +279,7 @@ export default function App() {
     setExporting(true);
     try {
       const result = await runExport(false);
+      setLastValidationIssues(result.validationIssues);
       if (result.missingUdtDefs.length > 0) {
         setPendingPreview(result);
       } else {
@@ -223,6 +296,7 @@ export default function App() {
     setExporting(true);
     try {
       const result = await runExport(true);
+      setLastValidationIssues(result.validationIssues);
       await saveTextFile(result.text, result.suggestedFileName);
     } finally {
       setExporting(false);
@@ -233,6 +307,7 @@ export default function App() {
   async function handleExportAnyway() {
     if (!pendingPreview) return;
     await saveTextFile(pendingPreview.text, pendingPreview.suggestedFileName);
+    setLastValidationIssues(pendingPreview.validationIssues);
     setPendingPreview(null);
   }
 
@@ -303,10 +378,14 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diffIndex]);
 
+  if (singleTransformFile) {
+    return <TransformScreen file={singleTransformFile} onBack={() => setSingleTransformFile(undefined)} />;
+  }
+
   if (!diffIndex) {
     return (
       <div className="app">
-        <LoadScreen onReady={(a, b) => void handleReady(a, b)} error={loadError} />
+        <LoadScreen onReady={(a, b) => void handleReady(a, b)} onTransformReady={(f) => setSingleTransformFile(f)} error={loadError} />
         {loading && <div className="loading-overlay">Parsing and diffing…</div>}
       </div>
     );
@@ -328,6 +407,12 @@ export default function App() {
     setMirrorDeletions(false);
     setScope('FULL');
     setPendingPreview(null);
+    setLastValidationIssues([]);
+    setFindReplaceOptions(EMPTY_FIND_REPLACE);
+    setFindReplacePreviewChanges(undefined);
+    setFindReplaceIncludedPaths(new Set());
+    setFindReplacePreviewError(undefined);
+    setStripOptions(EMPTY_STRIP);
   }
 
   return (
@@ -394,6 +479,19 @@ export default function App() {
           onIncludeDefs={() => void handleIncludeDefs()}
           onExportAnyway={() => void handleExportAnyway()}
           onCancelExport={() => setPendingPreview(null)}
+          lastExportValidationIssues={lastValidationIssues}
+          onNavigateToPath={handleOpen}
+          findReplaceOptions={findReplaceOptions}
+          onFindReplaceOptionsChange={setFindReplaceOptions}
+          onPreviewFindReplace={() => void handlePreviewFindReplace()}
+          previewingFindReplace={previewingFindReplace}
+          findReplacePreviewError={findReplacePreviewError}
+          findReplacePreviewChanges={findReplacePreviewChanges}
+          findReplaceIncludedPaths={findReplaceIncludedPaths}
+          onToggleFindReplaceIncluded={handleToggleFindReplaceIncluded}
+          onToggleAllFindReplaceIncluded={handleToggleAllFindReplaceIncluded}
+          stripOptions={stripOptions}
+          onStripOptionsChange={setStripOptions}
         />
       </footer>
       <IgnoreListPanel

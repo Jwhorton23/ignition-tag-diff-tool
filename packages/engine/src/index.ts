@@ -17,3 +17,6 @@ export {
   type ApplyMergeResult,
   type MissingUdtDef,
 } from './merge.js';
+export { previewFindReplace, applyFindReplace } from './findReplace.js';
+export { applyStrip, HISTORY_KEYS, DOCUMENTATION_KEYS } from './strip.js';
+export { validateTagFile } from './validate.js';

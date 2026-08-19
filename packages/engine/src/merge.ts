@@ -86,7 +86,7 @@ export function buildMergePlan(input: BuildMergePlanInput): MergePlan {
     // 'unchanged' selections are meaningless for into-a/into-b -- nothing to change.
   }
 
-  return { direction, baseFile, ops, transforms: [] };
+  return { direction, baseFile, ops };
 }
 
 function pickSourceSide(node: DiffNode, resolutions: ReadonlyMap<string, MergeSide>): MergeSide | null {
