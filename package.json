@@ -1,0 +1,21 @@
+{
+  "name": "ignition-tag-diff-tool",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Ignition Tag Diff & Merge Tool — locally running web app for diffing and merging Ignition SCADA tag exports.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "engine:test": "npm run test --workspace=packages/engine",
+    "engine:build": "npm run build --workspace=packages/engine",
+    "dev": "npm run dev --workspace=packages/app",
+    "build": "npm run build --workspace=packages/app",
+    "preview": "npm run preview --workspace=packages/app",
+    "test": "npm run engine:test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

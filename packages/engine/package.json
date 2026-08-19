@@ -1,0 +1,24 @@
+{
+  "name": "@ignition-diff/engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure TypeScript engine for the Ignition Tag Diff & Merge Tool: parse, diff, merge, and serialize Ignition tag exports with zero UI dependencies.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "vitest": "^3.0.0"
+  }
+}

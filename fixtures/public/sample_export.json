@@ -1,0 +1,116 @@
+{
+  "name": "default",
+  "tagType": "Provider",
+  "tags": [
+    {
+      "name": "_types_",
+      "tagType": "Folder",
+      "tags": [
+        {
+          "name": "MotorBase",
+          "tagType": "UdtType",
+          "parameters": {
+            "InstanceName": { "dataType": "String" },
+            "PLCInstance": { "dataType": "String" }
+          },
+          "tags": [
+            {
+              "name": "Speed",
+              "tagType": "AtomicTag",
+              "dataType": "Float8",
+              "valueSource": "opc",
+              "opcItemPath": "ns=2;s=[{PLCInstance}]Motors.{InstanceName}.Speed",
+              "opcServer": "Ignition OPC UA Server",
+              "engUnit": "RPM"
+            },
+            {
+              "name": "Running",
+              "tagType": "AtomicTag",
+              "dataType": "Boolean",
+              "valueSource": "opc",
+              "opcItemPath": "ns=2;s=[{PLCInstance}]Motors.{InstanceName}.Running",
+              "opcServer": "Ignition OPC UA Server",
+              "alarms": [
+                {
+                  "name": "RunFault",
+                  "enabled": true,
+                  "priority": "High",
+                  "setpointA": 1,
+                  "mode": "Above"
+                }
+              ]
+            },
+            {
+              "name": "onRunningChange",
+              "tagType": "AtomicTag",
+              "dataType": "Float8",
+              "valueSource": "memory",
+              "eventScripts": [
+                {
+                  "eventid": "valueChanged",
+                  "script": "if not initialChange:\n\tif currentValue.value:\n\t\tsystem.tag.write('[.]Speed', 0)\n"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Area1",
+      "tagType": "Folder",
+      "tags": [
+        {
+          "name": "Line3",
+          "tagType": "Folder",
+          "tags": [
+            {
+              "name": "Motor1",
+              "tagType": "UdtInstance",
+              "typeId": "MotorBase",
+              "parameters": {
+                "InstanceName": "Motor1",
+                "PLCInstance": "PLC01"
+              },
+              "tags": [
+                {
+                  "name": "Running",
+                  "tagType": "AtomicTag",
+                  "alarms": [
+                    {
+                      "name": "RunFault",
+                      "enabled": true,
+                      "priority": "High",
+                      "setpointA": 1,
+                      "mode": "Above",
+                      "notes": "instance-level override of the UDT default"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "ConveyorSpeedSP",
+              "tagType": "AtomicTag",
+              "dataType": "Float4",
+              "valueSource": "memory",
+              "value": 42.5,
+              "engUnit": "ft/min",
+              "documentation": "Operator setpoint for conveyor 7 line speed"
+            },
+            {
+              "name": "TotalizerQuery",
+              "tagType": "Tag",
+              "valueSource": "query",
+              "dataType": "Int8",
+              "query": "SELECT SUM(count) FROM production_totals WHERE line = 3",
+              "datasource": "ProdDB",
+              "executionMode": "PollSingle",
+              "pollRate": 60000
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
