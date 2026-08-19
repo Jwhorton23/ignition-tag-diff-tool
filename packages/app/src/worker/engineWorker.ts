@@ -71,8 +71,9 @@ const handlers: Handlers = {
     if (!fileA || !fileB || !diffIndex) throw new Error('No files loaded yet');
     const node = diffIndex.byPath.get(payload.path);
     if (!node) throw new Error(`Unknown diff path: ${payload.path}`);
-    const aRaw = node.aId ? fileA.nodes.get(node.aId)?.raw : undefined;
-    const bRaw = node.bId ? fileB.nodes.get(node.bId)?.raw : undefined;
+    // NOT `node.aId ? ...` — aId/bId can legitimately be "" (empty-string root id).
+    const aRaw = node.aId !== undefined ? fileA.nodes.get(node.aId)?.raw : undefined;
+    const bRaw = node.bId !== undefined ? fileB.nodes.get(node.bId)?.raw : undefined;
     return computePropDiff(aRaw, bRaw, new Set(DEFAULT_IGNORED_KEYS));
   },
 

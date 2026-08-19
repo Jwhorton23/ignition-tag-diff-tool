@@ -83,7 +83,11 @@ function buildNode(
   ignoredKeys: ReadonlySet<string>,
 ): string {
   const name = typeof obj.name === 'string' ? obj.name : `__unnamed_${sourceIndex}`;
-  const baseId = parentId ? `${parentId}/${name}` : name;
+  // NOT `parentId ? ... : name` — a real Ignition Provider export commonly
+  // has `"name": ""` at the root, and "" is a legitimate (if unusual) id.
+  // Truthiness would treat that empty-string root the same as "no parent",
+  // corrupting every direct child's id.
+  const baseId = parentId !== null ? `${parentId}/${name}` : name;
 
   // Malformed exports can contain duplicate sibling names; never silently
   // drop a node over it (PLAN.md §8) — suffix to keep both, and a later

@@ -81,7 +81,8 @@ function pickSourceSide(node: DiffNode, resolutions: ReadonlyMap<string, MergeSi
     case 'type-changed':
       return resolutions.get(node.path) ?? 'b';
     case 'unchanged':
-      return node.bId ? 'b' : 'a';
+      // NOT `node.bId ? ...` — bId can legitimately be "" (empty-string root id).
+      return node.bId !== undefined ? 'b' : 'a';
     default:
       return null;
   }
@@ -110,7 +111,8 @@ export function applyMergePlan(fileA: TagFile, fileB: TagFile, plan: MergePlan):
 
   function nodeAt(side: MergeSide, alignPath: string): TagNode | undefined {
     const id = sourceAlign(side).idByLowerPath.get(alignPath.toLowerCase());
-    return id ? sourceFile(side).nodes.get(id) : undefined;
+    // NOT `id ? ... : undefined` — id can legitimately be "" (empty-string root id).
+    return id !== undefined ? sourceFile(side).nodes.get(id) : undefined;
   }
 
   function bareRaw(node: TagNode): JsonObject {
@@ -289,7 +291,8 @@ export function pullInUdtDefs(fileA: TagFile, fileB: TagFile, plan: MergePlan, m
   for (const { typeId } of missing) {
     const bDefId = fileB.udtDefs.get(typeId);
     const aDefId = fileA.udtDefs.get(typeId);
-    const side: MergeSide | null = bDefId ? 'b' : aDefId ? 'a' : null;
+    // NOT `bDefId ? ... : aDefId ? ...` — a def id could in principle be "".
+    const side: MergeSide | null = bDefId !== undefined ? 'b' : aDefId !== undefined ? 'a' : null;
     if (!side) continue;
     const defId = side === 'b' ? bDefId! : aDefId!;
     const defAlignPath = (side === 'b' ? alignB : alignA).pathById.get(defId);

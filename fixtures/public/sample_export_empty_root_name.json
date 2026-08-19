@@ -1,0 +1,72 @@
+{
+  "name": "",
+  "tagType": "Provider",
+  "tags": [
+    {
+      "name": "ASHEVILLE",
+      "tagType": "Folder",
+      "tags": [
+        {
+          "name": "CASTING",
+          "tagType": "Folder",
+          "tags": [
+            {
+              "name": "WD10017",
+              "tagType": "Folder",
+              "tags": [
+                {
+                  "name": "SLURRY MIX",
+                  "tagType": "Folder",
+                  "tags": [
+                    {
+                      "name": "203",
+                      "tagType": "Folder",
+                      "tags": [
+                        {
+                          "name": "S05",
+                          "tagType": "Folder",
+                          "tags": [
+                            {
+                              "name": "WASH BAY",
+                              "tagType": "Folder",
+                              "tags": [
+                                {
+                                  "valueSource": "opc",
+                                  "opcServer": "Ignition OPC UA Server",
+                                  "opcItemPath": "ns=1;s=[DeviceName]Data.Motor1.Speed",
+                                  "dataType": "Float4",
+                                  "name": "Motor_Speed",
+                                  "tagType": "AtomicTag"
+                                },
+                                {
+                                  "valueSource": "memory",
+                                  "dataType": "Int4",
+                                  "value": 100,
+                                  "name": "Target_Count",
+                                  "tagType": "AtomicTag"
+                                },
+                                {
+                                  "typeId": "Templates/Motor_UDT",
+                                  "name": "Conveyor_Motor",
+                                  "tagType": "UdtInstance",
+                                  "parameters": {
+                                    "DeviceName": "PLC_01",
+                                    "MotorNum": "1"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

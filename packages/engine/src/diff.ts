@@ -16,14 +16,18 @@ export function diffTagFiles(fileA: TagFile, fileB: TagFile): DiffIndex {
   const byPath = new Map<string, DiffNode>();
 
   for (const lowerKey of lowerKeys) {
+    // NOT `aId ? ... : undefined` — a root node commonly has id "" (empty
+    // string, from an Ignition Provider export with `"name": ""`), and ""
+    // is a real, present id. Truthiness would treat it as "not found" and
+    // silently drop the root from the diff entirely.
     const aId = alignA.idByLowerPath.get(lowerKey);
     const bId = alignB.idByLowerPath.get(lowerKey);
-    const aNode = aId ? fileA.nodes.get(aId) : undefined;
-    const bNode = bId ? fileB.nodes.get(bId) : undefined;
+    const aNode = aId !== undefined ? fileA.nodes.get(aId) : undefined;
+    const bNode = bId !== undefined ? fileB.nodes.get(bId) : undefined;
     if (!aNode && !bNode) continue;
 
-    const aPath = aId ? alignA.pathById.get(aId) : undefined;
-    const bPath = bId ? alignB.pathById.get(bId) : undefined;
+    const aPath = aId !== undefined ? alignA.pathById.get(aId) : undefined;
+    const bPath = bId !== undefined ? alignB.pathById.get(bId) : undefined;
     const displayPath = aPath ?? bPath;
     if (!displayPath) continue;
     const caseOnlyRename = !!(aPath && bPath && aPath !== bPath);
@@ -47,8 +51,8 @@ export function diffTagFiles(fileA: TagFile, fileB: TagFile): DiffIndex {
       kind: (bNode ?? aNode)!.kind,
       childPaths: [],
       rollup: { added: 0, removed: 0, modified: 0, inherited: 0 },
-      ...(aId ? { aId } : {}),
-      ...(bId ? { bId } : {}),
+      ...(aId !== undefined ? { aId } : {}),
+      ...(bId !== undefined ? { bId } : {}),
       ...(caseOnlyRename ? { caseOnlyRename: true } : {}),
     };
     byPath.set(displayPath, node);
