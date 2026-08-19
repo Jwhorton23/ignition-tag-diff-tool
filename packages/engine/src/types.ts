@@ -98,6 +98,12 @@ export interface DiffNode {
   status: DiffStatus;
   /** Best-available kind for icon/glyph purposes: B's kind if present, else A's. */
   kind: NodeKind;
+  /** Cheap, search/filter-friendly summary fields (from B's raw if present, else A's) —
+   *  small scalars only, never the full `raw` payload (PLAN.md §1's compact-summary rule). */
+  tagType?: string;
+  dataType?: string;
+  hasAlarms: boolean;
+  hasScripts: boolean;
   aId?: string;
   bId?: string;
   childPaths: string[];

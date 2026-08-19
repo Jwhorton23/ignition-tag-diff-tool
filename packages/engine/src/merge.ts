@@ -24,13 +24,23 @@ import type {
 } from './types.js';
 import { alignPathName, buildAlignmentIndex, parentAlignPath, type AlignmentIndex } from './alignment.js';
 import { classifyKind } from './parse.js';
+import { applyPropertyPatch } from './propPatch.js';
 
 export interface BuildMergePlanInput {
   diffIndex: DiffIndex;
   /** Diff paths the user has checked for inclusion in the merge. */
   selection: ReadonlySet<string>;
-  /** Conflict resolution for 'modified'/'type-changed' paths that were selected. */
+  /** Whole-node conflict resolution for 'modified'/'type-changed' paths that
+   *  were selected (Take A / Take B) — ignored for a path that has a
+   *  non-empty entry in `cherryPicks`. */
   resolutions: ReadonlyMap<string, MergeSide>;
+  /** Per-property cherry-pick overrides: diff path -> (PropDiff.key -> side).
+   *  When a selected 'modified'/'type-changed' path has a non-empty entry
+   *  here, a surgical 'patch' op is emitted instead of a whole-node
+   *  'replace' — only into-a/into-b (a 'new-file' build has no base to
+   *  patch onto, so cherry-picks are ignored there; PLAN.md's cherry-pick
+   *  UI targets the common dev<->prod merge case). */
+  cherryPicks?: ReadonlyMap<string, ReadonlyMap<string, MergeSide>>;
   direction: MergeDirection;
   /** Opt-in: mirror 'removed'/'added' differences by deleting from the base
    *  when the base is the side that natively has the tag (PLAN.md §4.1). */
@@ -38,7 +48,7 @@ export interface BuildMergePlanInput {
 }
 
 export function buildMergePlan(input: BuildMergePlanInput): MergePlan {
-  const { diffIndex, selection, resolutions, direction, mirrorDeletions } = input;
+  const { diffIndex, selection, resolutions, cherryPicks, direction, mirrorDeletions } = input;
   const baseFile: MergeSide | null = direction === 'into-a' ? 'a' : direction === 'into-b' ? 'b' : null;
   const ops: MergeOp[] = [];
 
@@ -60,9 +70,17 @@ export function buildMergePlan(input: BuildMergePlanInput): MergePlan {
         ops.push({ op: 'add', path, from: uniqueSide });
       }
     } else if (node.status === 'modified' || node.status === 'type-changed') {
-      const resolved = resolutions.get(path);
-      if (resolved && resolved !== baseFile) {
-        ops.push({ op: 'replace', path, from: resolved });
+      const cherryPick = cherryPicks?.get(path);
+      if (cherryPick && cherryPick.size > 0) {
+        const props = [...cherryPick.entries()]
+          .filter(([, from]) => from !== baseFile)
+          .map(([key, from]) => ({ key, from }));
+        if (props.length > 0) ops.push({ op: 'patch', path, props });
+      } else {
+        const resolved = resolutions.get(path);
+        if (resolved && resolved !== baseFile) {
+          ops.push({ op: 'replace', path, from: resolved });
+        }
       }
     }
     // 'unchanged' selections are meaningless for into-a/into-b -- nothing to change.
@@ -178,14 +196,16 @@ export function applyMergePlan(fileA: TagFile, fileB: TagFile, plan: MergePlan):
     } else if (op.op === 'remove') {
       removeSubtree(op.path);
     } else if (op.op === 'patch') {
-      const existing = working.get(op.path);
+      // Cherry-pick: `key` is a full PropDiff.key path (e.g. "alarms[HiHi].setpointA"),
+      // not just a top-level property name — applyPropertyPatch understands the
+      // same dotted/bracketed/identity-array format computePropDiff produces.
+      let existing = working.get(op.path);
       if (existing) {
-        const clone: JsonObject = { ...existing };
         for (const { key, from } of op.props) {
           const srcNode = nodeAt(from, op.path);
-          if (srcNode && key in srcNode.raw) clone[key] = srcNode.raw[key];
+          if (srcNode) existing = applyPropertyPatch(existing, srcNode.raw, key);
         }
-        working.set(op.path, clone);
+        working.set(op.path, existing);
       }
     }
   }

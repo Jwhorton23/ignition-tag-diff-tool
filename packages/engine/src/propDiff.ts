@@ -9,7 +9,9 @@ import type { JsonObject, JsonValue, PropDiff } from './types.js';
 import { DEFAULT_IGNORED_KEYS, stableStringify } from './hash.js';
 
 const ALWAYS_EXCLUDED = new Set<string>(['tags']);
-const IDENTITY_ARRAY_KEYS: Record<string, string> = { alarms: 'name', eventScripts: 'eventid' };
+/** Exported so propPatch.ts can navigate the exact same array-of-records
+ *  properties by identity when applying a cherry-picked patch. */
+export const IDENTITY_ARRAY_KEYS: Record<string, string> = { alarms: 'name', eventScripts: 'eventid' };
 const SCRIPT_LEAF_NAMES = new Set<string>(['script', 'expression']);
 
 export function computePropDiff(

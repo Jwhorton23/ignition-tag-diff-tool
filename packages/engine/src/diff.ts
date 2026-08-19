@@ -4,9 +4,24 @@
 // that type — including through inheritance chains — without treating the
 // instance's own (unchanged) overrides as "modified" (§3.3).
 
-import type { DiffIndex, DiffNode, DiffRollup, DiffStatus, TagFile } from './types.js';
+import type { DiffIndex, DiffNode, DiffRollup, DiffStatus, TagFile, TagNode } from './types.js';
 import { alignPathName, buildAlignmentIndex, parentAlignPath } from './alignment.js';
 import { fnv1a } from './hash.js';
+
+/** Cheap, scalar-only summary of a node's raw for search/filter purposes. */
+function summarize(node: TagNode | undefined): { tagType?: string; dataType?: string; hasAlarms: boolean; hasScripts: boolean } {
+  if (!node) return { hasAlarms: false, hasScripts: false };
+  const raw = node.raw;
+  const dataType = typeof raw.dataType === 'string' ? raw.dataType : undefined;
+  const hasAlarms = Array.isArray(raw.alarms) && raw.alarms.length > 0;
+  const hasScripts = Array.isArray(raw.eventScripts) && raw.eventScripts.length > 0;
+  return {
+    ...(node.tagType !== undefined ? { tagType: node.tagType } : {}),
+    ...(dataType !== undefined ? { dataType } : {}),
+    hasAlarms,
+    hasScripts,
+  };
+}
 
 export function diffTagFiles(fileA: TagFile, fileB: TagFile): DiffIndex {
   const alignA = buildAlignmentIndex(fileA);
@@ -49,6 +64,7 @@ export function diffTagFiles(fileA: TagFile, fileB: TagFile): DiffIndex {
       parentPath: parentAlignPath(displayPath),
       status,
       kind: (bNode ?? aNode)!.kind,
+      ...summarize(bNode ?? aNode),
       childPaths: [],
       rollup: { added: 0, removed: 0, modified: 0, inherited: 0 },
       ...(aId !== undefined ? { aId } : {}),

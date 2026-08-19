@@ -25,6 +25,15 @@ import {
 let fileA: TagFile | null = null;
 let fileB: TagFile | null = null;
 let diffIndex: DiffIndex | null = null;
+// Retained so the ignore-list can change without re-loading files: a new
+// ignore-list requires re-hashing (parseTagFile bakes ignoredKeys into
+// ownHash/structuralHash at parse time — PLAN.md §3.2), so we re-parse the
+// original text rather than trying to patch hashes after the fact.
+let fileAText = '';
+let fileBText = '';
+let fileAName = '';
+let fileBName = '';
+let ignoredKeys: string[] = [...DEFAULT_IGNORED_KEYS];
 
 interface DiffRequest {
   fileAName: string;
@@ -37,9 +46,15 @@ interface PropDiffRequest {
   path: string;
 }
 
+interface SetIgnoredKeysRequest {
+  ignoredKeys: string[];
+}
+
 export interface ExportRequest {
   selection: string[];
   resolutions: Array<[string, MergeSide]>;
+  /** Per-property cherry-pick overrides: diff path -> array of [PropDiff.key, side]. */
+  cherryPicks: Array<[string, Array<[string, MergeSide]>]>;
   direction: MergeDirection;
   mirrorDeletions: boolean;
   autoPullInMissingDefs: boolean;
@@ -56,15 +71,24 @@ export interface ExportResponse {
 type Handlers = {
   diff: (payload: DiffRequest) => DiffIndex;
   propDiff: (payload: PropDiffRequest) => PropDiff[];
+  setIgnoredKeys: (payload: SetIgnoredKeysRequest) => DiffIndex;
   export: (payload: ExportRequest) => ExportResponse;
 };
 
+function reparseAndDiff(): DiffIndex {
+  fileA = parseTagFile(fileAText, fileAName, { ignoredKeys });
+  fileB = parseTagFile(fileBText, fileBName, { ignoredKeys });
+  diffIndex = diffTagFiles(fileA, fileB);
+  return diffIndex;
+}
+
 const handlers: Handlers = {
   diff(payload) {
-    fileA = parseTagFile(payload.fileAText, payload.fileAName);
-    fileB = parseTagFile(payload.fileBText, payload.fileBName);
-    diffIndex = diffTagFiles(fileA, fileB);
-    return diffIndex;
+    fileAText = payload.fileAText;
+    fileBText = payload.fileBText;
+    fileAName = payload.fileAName;
+    fileBName = payload.fileBName;
+    return reparseAndDiff();
   },
 
   propDiff(payload) {
@@ -74,7 +98,13 @@ const handlers: Handlers = {
     // NOT `node.aId ? ...` — aId/bId can legitimately be "" (empty-string root id).
     const aRaw = node.aId !== undefined ? fileA.nodes.get(node.aId)?.raw : undefined;
     const bRaw = node.bId !== undefined ? fileB.nodes.get(node.bId)?.raw : undefined;
-    return computePropDiff(aRaw, bRaw, new Set(DEFAULT_IGNORED_KEYS));
+    return computePropDiff(aRaw, bRaw, new Set(ignoredKeys));
+  },
+
+  setIgnoredKeys(payload) {
+    if (!fileAText || !fileBText) throw new Error('No files loaded yet');
+    ignoredKeys = payload.ignoredKeys;
+    return reparseAndDiff();
   },
 
   export(payload) {
@@ -84,6 +114,7 @@ const handlers: Handlers = {
       diffIndex,
       selection: new Set(payload.selection),
       resolutions: new Map(payload.resolutions),
+      cherryPicks: new Map(payload.cherryPicks.map(([path, entries]) => [path, new Map(entries)])),
       direction: payload.direction,
       mirrorDeletions: payload.mirrorDeletions,
     });

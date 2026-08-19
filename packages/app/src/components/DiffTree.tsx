@@ -1,7 +1,7 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { DiffIndex, DiffStatus } from '@ignition-diff/engine';
-import { checkboxState, flattenTree, type TreeRow } from '../lib/treeHelpers';
+import { checkboxState, type TreeRow } from '../lib/treeHelpers';
 
 const STATUS_GLYPH: Record<DiffStatus, string> = {
   added: '⊕',
@@ -13,6 +13,7 @@ const STATUS_GLYPH: Record<DiffStatus, string> = {
 
 interface DiffTreeProps {
   diffIndex: DiffIndex;
+  rows: TreeRow[];
   expanded: ReadonlySet<string>;
   onToggleExpand: (path: string) => void;
   selected: ReadonlySet<string>;
@@ -21,8 +22,7 @@ interface DiffTreeProps {
   onOpen: (path: string) => void;
 }
 
-export function DiffTree({ diffIndex, expanded, onToggleExpand, selected, onToggleSelect, openPath, onOpen }: DiffTreeProps) {
-  const rows = useMemo(() => flattenTree(diffIndex, expanded), [diffIndex, expanded]);
+export function DiffTree({ diffIndex, rows, expanded, onToggleExpand, selected, onToggleSelect, openPath, onOpen }: DiffTreeProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const virtualizer = useVirtualizer({
@@ -31,6 +31,15 @@ export function DiffTree({ diffIndex, expanded, onToggleExpand, selected, onTogg
     estimateSize: () => 26,
     overscan: 20,
   });
+
+  // Keep the focused row (moved via j/k keyboard nav, or opened by click) in
+  // view even when it's outside the currently rendered virtual window.
+  useEffect(() => {
+    if (!openPath) return;
+    const index = rows.findIndex((r) => r.path === openPath);
+    if (index !== -1) virtualizer.scrollToIndex(index, { align: 'auto' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openPath, rows]);
 
   return (
     <div className="diff-tree" ref={scrollRef}>

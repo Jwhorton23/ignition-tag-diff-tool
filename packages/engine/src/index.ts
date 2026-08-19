@@ -4,7 +4,8 @@ export { parseTagFile, TagParseError, classifyKind } from './parse.js';
 export { serializeTagFile } from './serialize.js';
 export { buildAlignmentIndex, parentAlignPath, alignPathName, type AlignmentIndex } from './alignment.js';
 export { diffLines, type LineDiffOp } from './textDiff.js';
-export { computePropDiff } from './propDiff.js';
+export { computePropDiff, IDENTITY_ARRAY_KEYS } from './propDiff.js';
+export { applyPropertyPatch } from './propPatch.js';
 export { diffTagFiles } from './diff.js';
 export { extractSubtree } from './subtree.js';
 export {

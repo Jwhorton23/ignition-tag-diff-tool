@@ -169,7 +169,7 @@ describe('UDT dependency safety (missing definitions)', () => {
   });
 });
 
-describe('patch op (cherry-pick apply — not yet emitted by buildMergePlan, but must apply correctly)', () => {
+describe('patch op (manually constructed) applies correctly', () => {
   it('overwrites only the listed top-level properties, leaving the rest of the base node untouched', () => {
     const a = file({ name: 'root', tagType: 'Folder', tags: [{ name: 'X', tagType: 'AtomicTag', opcItemPath: 'ns=2;s=Dev', engUnit: 'PSI', documentation: 'keep me' }] }, 'a');
     const b = file({ name: 'root', tagType: 'Folder', tags: [{ name: 'X', tagType: 'AtomicTag', opcItemPath: 'ns=2;s=Prod', engUnit: 'BAR', documentation: 'ignore me' }] }, 'b');
@@ -181,5 +181,75 @@ describe('patch op (cherry-pick apply — not yet emitted by buildMergePlan, but
     expect(raw?.opcItemPath).toBe('ns=2;s=Prod');
     expect(raw?.engUnit).toBe('PSI'); // untouched — stayed A's value
     expect(raw?.documentation).toBe('keep me'); // untouched
+  });
+});
+
+describe('buildMergePlan — cherry-pick overrides', () => {
+  const scenario = () => {
+    const a = file(
+      { name: 'root', tagType: 'Folder', tags: [{ name: 'X', tagType: 'AtomicTag', opcItemPath: 'ns=2;s=Dev', engUnit: 'PSI', documentation: 'dev notes' }] },
+      'a',
+    );
+    const b = file(
+      { name: 'root', tagType: 'Folder', tags: [{ name: 'X', tagType: 'AtomicTag', opcItemPath: 'ns=2;s=Prod', engUnit: 'BAR', documentation: 'prod notes' }] },
+      'b',
+    );
+    return { a, b, diff: diffTagFiles(a, b) };
+  };
+
+  it('emits a patch op (not replace) when a cherry-pick override is present, touching only the overridden property', () => {
+    const { a, b, diff } = scenario();
+    const plan = buildMergePlan({
+      diffIndex: diff,
+      selection: new Set(['R0/X']),
+      resolutions: new Map(), // no whole-node resolution — cherry-pick takes precedence anyway
+      cherryPicks: new Map([['R0/X', new Map([['opcItemPath', 'b']])]]),
+      direction: 'into-a',
+      mirrorDeletions: false,
+    });
+    expect(plan.ops).toEqual([{ op: 'patch', path: 'R0/X', props: [{ key: 'opcItemPath', from: 'b' }] }]);
+
+    const { file: result } = applyMergePlan(a, b, plan);
+    const raw = result.nodes.get('R0/X')?.raw;
+    expect(raw?.opcItemPath).toBe('ns=2;s=Prod'); // cherry-picked from B
+    expect(raw?.engUnit).toBe('PSI'); // stayed A's — not cherry-picked
+    expect(raw?.documentation).toBe('dev notes'); // stayed A's — not cherry-picked
+  });
+
+  it('supports cherry-picking multiple independent properties from different sides in one tag', () => {
+    const { a, b, diff } = scenario();
+    const plan = buildMergePlan({
+      diffIndex: diff,
+      selection: new Set(['R0/X']),
+      resolutions: new Map(),
+      cherryPicks: new Map([
+        [
+          'R0/X',
+          new Map([
+            ['opcItemPath', 'b'],
+            ['documentation', 'a'], // explicitly keep A's — should produce no-op for this key (base already 'a')
+          ]),
+        ],
+      ]),
+      direction: 'into-a',
+      mirrorDeletions: false,
+    });
+    // documentation resolved to 'a' == baseFile, so only opcItemPath needs an actual patch entry.
+    expect(plan.ops).toEqual([{ op: 'patch', path: 'R0/X', props: [{ key: 'opcItemPath', from: 'b' }] }]);
+    const { file: result } = applyMergePlan(a, b, plan);
+    expect(result.nodes.get('R0/X')?.raw.documentation).toBe('dev notes');
+  });
+
+  it('falls back to whole-node resolution when no cherry-pick override is present for a selected modified path', () => {
+    const { a, b, diff } = scenario();
+    const plan = buildMergePlan({
+      diffIndex: diff,
+      selection: new Set(['R0/X']),
+      resolutions: new Map([['R0/X', 'b']]),
+      cherryPicks: new Map(), // present but empty for this path
+      direction: 'into-a',
+      mirrorDeletions: false,
+    });
+    expect(plan.ops).toEqual([{ op: 'replace', path: 'R0/X', from: 'b' }]);
   });
 });

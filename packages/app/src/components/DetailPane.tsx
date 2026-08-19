@@ -20,12 +20,29 @@ function ScriptDiff({ before, after }: { before: string; after: string }) {
   );
 }
 
-function PropRow({ row }: { row: PropDiff }) {
+interface PropRowProps {
+  row: PropDiff;
+  cherryPickable: boolean;
+  cherryPickedSide: MergeSide | undefined;
+  onCherryPick: (key: string, side: MergeSide) => void;
+}
+
+function PropRow({ row, cherryPickable, cherryPickedSide, onCherryPick }: PropRowProps) {
   return (
     <div className={`prop-row prop-row--${row.status}${row.ignored ? ' prop-row--ignored' : ''}`}>
       <div className="prop-row__header">
         <span className="prop-row__key">{row.key}</span>
         {row.ignored && <span className="prop-row__ignored-badge">ignored</span>}
+        {cherryPickable && (
+          <span className="prop-row__cherry-pick" title="Cherry-pick this property">
+            <button type="button" className={cherryPickedSide === 'a' ? 'active' : ''} onClick={() => onCherryPick(row.key, 'a')}>
+              A
+            </button>
+            <button type="button" className={cherryPickedSide === 'b' ? 'active' : ''} onClick={() => onCherryPick(row.key, 'b')}>
+              B
+            </button>
+          </span>
+        )}
       </div>
       {row.renderHint === 'script' ? (
         <ScriptDiff before={typeof row.aValue === 'string' ? row.aValue : ''} after={typeof row.bValue === 'string' ? row.bValue : ''} />
@@ -47,9 +64,27 @@ interface DetailPaneProps {
   loading: boolean;
   resolution: MergeSide | undefined;
   onResolve: (side: MergeSide) => void;
+  cherryPicks: ReadonlyMap<string, MergeSide> | undefined;
+  onCherryPick: (propKey: string, side: MergeSide) => void;
+  forceIncludable: boolean;
+  wholeSubtreeSelected: boolean;
+  onToggleWholeSubtree: () => void;
 }
 
-export function DetailPane({ node, fileAName, fileBName, rows, loading, resolution, onResolve }: DetailPaneProps) {
+export function DetailPane({
+  node,
+  fileAName,
+  fileBName,
+  rows,
+  loading,
+  resolution,
+  onResolve,
+  cherryPicks,
+  onCherryPick,
+  forceIncludable,
+  wholeSubtreeSelected,
+  onToggleWholeSubtree,
+}: DetailPaneProps) {
   if (!node) {
     return (
       <div className="detail-pane detail-pane--empty">
@@ -59,6 +94,7 @@ export function DetailPane({ node, fileAName, fileBName, rows, loading, resoluti
   }
 
   const needsResolution = node.status === 'modified' || node.status === 'type-changed';
+  const cherryPickActive = !!cherryPicks?.size;
 
   return (
     <div className="detail-pane">
@@ -71,15 +107,30 @@ export function DetailPane({ node, fileAName, fileBName, rows, loading, resoluti
         <div className="detail-pane__notice">This instance's UDT definition changed between A and B, even though this tag's own overrides are identical.</div>
       )}
 
+      {forceIncludable && (
+        <div className="detail-pane__notice detail-pane__notice--force-include">
+          <span>
+            {node.status === 'unchanged'
+              ? "This tag (or some tags below it) is identical in both files, so the checkbox can't reach it — nothing to change for a same-environment merge."
+              : 'Some tags below this one are identical in both files and are skipped by the normal checkbox.'}{' '}
+            Building a standalone export for a gateway that doesn't have this at all yet? Force-include the whole subtree, unchanged tags included.
+          </span>
+          <button type="button" className={wholeSubtreeSelected ? 'active' : ''} onClick={onToggleWholeSubtree}>
+            {wholeSubtreeSelected ? '✓ Whole subtree included' : 'Include entire subtree'}
+          </button>
+        </div>
+      )}
+
       {needsResolution && (
         <div className="conflict-bar">
           <span>Conflict:</span>
-          <button type="button" className={resolution === 'a' ? 'active' : ''} onClick={() => onResolve('a')}>
+          <button type="button" className={!cherryPickActive && resolution === 'a' ? 'active' : ''} onClick={() => onResolve('a')}>
             Take A ({fileAName})
           </button>
-          <button type="button" className={resolution === 'b' ? 'active' : ''} onClick={() => onResolve('b')}>
+          <button type="button" className={!cherryPickActive && resolution === 'b' ? 'active' : ''} onClick={() => onResolve('b')}>
             Take B ({fileBName})
           </button>
+          {cherryPickActive && <span className="conflict-bar__cherry-pick-notice">cherry-picked ({cherryPicks!.size} propert{cherryPicks!.size === 1 ? 'y' : 'ies'})</span>}
         </div>
       )}
 
@@ -95,7 +146,13 @@ export function DetailPane({ node, fileAName, fileBName, rows, loading, resoluti
             <span>B — {fileBName}</span>
           </div>
           {rows.map((row) => (
-            <PropRow key={row.key} row={row} />
+            <PropRow
+              key={row.key}
+              row={row}
+              cherryPickable={needsResolution}
+              cherryPickedSide={cherryPicks?.get(row.key)}
+              onCherryPick={onCherryPick}
+            />
           ))}
         </div>
       )}

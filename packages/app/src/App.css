@@ -535,3 +535,261 @@ body {
   cursor: pointer;
   padding: 0.35rem 0.7rem;
 }
+
+/* ---------- Filter bar (Phase 2) ---------- */
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-bar__search {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.3rem 0.5rem;
+  min-width: 180px;
+  flex: 1 1 180px;
+}
+
+.filter-bar__chips {
+  display: flex;
+  gap: 4px;
+}
+
+.chip {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.chip--active.chip--added {
+  background: rgba(76, 175, 125, 0.2);
+  border-color: var(--added);
+  color: var(--added);
+}
+
+.chip--active.chip--removed {
+  background: rgba(224, 97, 107, 0.2);
+  border-color: var(--removed);
+  color: var(--removed);
+}
+
+.chip--active.chip--modified {
+  background: rgba(217, 164, 65, 0.2);
+  border-color: var(--modified);
+  color: var(--modified);
+}
+
+.chip--active.chip--unchanged {
+  background: rgba(138, 141, 145, 0.2);
+  border-color: var(--text-dim);
+  color: var(--text);
+}
+
+.filter-bar select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.25rem;
+  font-size: 12px;
+}
+
+.filter-bar label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+}
+
+.filter-bar__count {
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+.filter-bar__ignore-list-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0.25rem 0.6rem;
+}
+
+.filter-bar__ignore-list-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Ignore-list panel (Phase 2) ---------- */
+
+.ignore-list-panel {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  width: 340px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 0.9rem;
+  z-index: 20;
+  font-size: 12px;
+}
+
+.ignore-list-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.ignore-list-panel__header button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.ignore-list-panel__hint {
+  color: var(--text-dim);
+  margin: 0 0 0.6rem;
+  line-height: 1.4;
+}
+
+.ignore-list-panel__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 0.6rem;
+  min-height: 24px;
+}
+
+.ignore-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2px 4px 2px 8px;
+  font-family: var(--mono);
+}
+
+.ignore-chip button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.ignore-list-panel__add {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 0.7rem;
+}
+
+.ignore-list-panel__add input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.3rem 0.5rem;
+}
+
+.ignore-list-panel__add button,
+.ignore-list-panel__actions button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0.3rem 0.7rem;
+}
+
+.ignore-list-panel__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ignore-list-panel__actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- Cherry-pick controls (Phase 2) ---------- */
+
+.prop-row__cherry-pick {
+  margin-left: auto;
+  display: flex;
+  gap: 3px;
+}
+
+.prop-row__cherry-pick button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 5px;
+}
+
+.prop-row__cherry-pick button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(91, 157, 217, 0.15);
+}
+
+.conflict-bar__cherry-pick-notice {
+  color: var(--accent);
+  font-size: 11px;
+  margin-left: 0.3rem;
+}
+
+/* ---------- Force-include whole subtree (Phase 2) ---------- */
+
+.detail-pane__notice--force-include {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: space-between;
+  border-left-color: var(--modified);
+  background: rgba(217, 164, 65, 0.1);
+}
+
+.detail-pane__notice--force-include button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  flex: none;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+}
+
+.detail-pane__notice--force-include button.active {
+  border-color: var(--added);
+  color: var(--added);
+  background: rgba(76, 175, 125, 0.15);
+}
